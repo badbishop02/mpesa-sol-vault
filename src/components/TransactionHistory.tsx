@@ -1,5 +1,9 @@
 import { ArrowUpRight, ArrowDownLeft, Plus, Repeat } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserId } from "@/lib/user";
+
 
 interface Transaction {
   id: string;
@@ -12,40 +16,48 @@ interface Transaction {
 }
 
 export const TransactionHistory = () => {
-  const transactions: Transaction[] = [
-    {
-      id: "1",
-      type: "deposit",
-      amount: 50000,
-      status: "completed",
-      timestamp: "2 hours ago"
-    },
-    {
-      id: "2",
-      type: "buy",
-      amount: 30000,
-      crypto: "SOL",
-      cryptoAmount: 1.67,
-      status: "completed",
-      timestamp: "3 hours ago"
-    },
-    {
-      id: "3",
-      type: "buy",
-      amount: 15000,
-      crypto: "USDT",
-      cryptoAmount: 103.45,
-      status: "pending",
-      timestamp: "1 day ago"
-    },
-    {
-      id: "4",
-      type: "deposit",
-      amount: 25000,
-      status: "completed",
-      timestamp: "2 days ago"
-    }
-  ];
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    const userId = getUserId();
+    const fetchTx = async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!error) {
+        setTransactions(
+          (data || []).map((d: any) => ({
+            id: d.id,
+            type: d.type,
+            amount: Number(d.amount_kes),
+            crypto: d.crypto_symbol ?? undefined,
+            cryptoAmount: d.crypto_amount ?? undefined,
+            status: d.status,
+            timestamp: new Date(d.created_at).toLocaleString(),
+          })) as Transaction[]
+        );
+      }
+    };
+
+    fetchTx();
+
+    const channel = supabase
+      .channel("transactions-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${userId}` },
+        () => fetchTx()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
 
   const getTransactionIcon = (type: string) => {
     switch (type) {

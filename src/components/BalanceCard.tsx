@@ -1,11 +1,49 @@
 import { Eye, EyeOff, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserId } from "@/lib/user";
+
 
 export const BalanceCard = () => {
   const [showBalance, setShowBalance] = useState(true);
-  const totalBalance = 125000; // KES
+  const [totalBalance, setTotalBalance] = useState<number>(0);
   const changePercent = 12.5;
+
+  useEffect(() => {
+    const userId = getUserId();
+    const fetchBalance = async () => {
+      const { data, error } = await supabase
+        .from("wallets")
+        .select("balance_kes")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!error) {
+        setTotalBalance(Number(data?.balance_kes ?? 0));
+      }
+    };
+    fetchBalance();
+
+    const channel = supabase
+      .channel("wallets-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          const newRow: any = (payload as any).new;
+          if (newRow?.balance_kes !== undefined) {
+            setTotalBalance(Number(newRow.balance_kes));
+          } else {
+            fetchBalance();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="crypto-card relative overflow-hidden">

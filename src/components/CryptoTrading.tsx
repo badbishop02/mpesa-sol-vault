@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, Coins, ArrowUpRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserId } from "@/lib/user";
 
 interface CryptoOption {
   symbol: string;
@@ -60,18 +62,88 @@ export const CryptoTrading = () => {
       });
       return;
     }
+    if (action !== "buy") {
+      toast({ title: "Not implemented", description: "Selling will be enabled once holdings exist." });
+      return;
+    }
 
     setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const amountKes = parseFloat(kesAmount);
+      if (isNaN(amountKes) || amountKes <= 0) throw new Error("Enter a valid KES amount");
+      const userId = getUserId();
+
+      // Check wallet balance
+      const { data: wallet, error: wErr } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (wErr) throw wErr;
+      const currentBalance = Number(wallet?.balance_kes ?? 0);
+      if (currentBalance < amountKes) throw new Error("Insufficient KES balance");
+
+      // Compute crypto amount
+      const price = selectedCryptoData!.price;
+      const qty = amountKes / price;
+
+      // Insert transaction
+      const { error: txErr } = await supabase.from("transactions").insert([
+        {
+          user_id: userId,
+          type: "buy",
+          amount_kes: amountKes,
+          crypto_symbol: selectedCrypto,
+          crypto_amount: qty,
+          status: "completed",
+        },
+      ]);
+      if (txErr) throw txErr;
+
+      // Upsert holding
+      const { data: holding, error: hErr } = await supabase
+        .from("holdings")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("symbol", selectedCrypto)
+        .maybeSingle();
+      if (hErr) throw hErr;
+
+      if (!holding) {
+        const { error: insHoldErr } = await supabase.from("holdings").insert([
+          { user_id: userId, symbol: selectedCrypto, amount: qty },
+        ]);
+        if (insHoldErr) throw insHoldErr;
+      } else {
+        const { error: updHoldErr } = await supabase
+          .from("holdings")
+          .update({ amount: Number(holding.amount) + qty })
+          .eq("id", holding.id);
+        if (updHoldErr) throw updHoldErr;
+      }
+
+      // Update wallet balance
+      const { error: updWalErr } = await supabase
+        .from("wallets")
+        .update({ balance_kes: currentBalance - amountKes })
+        .eq("id", wallet!.id);
+      if (updWalErr) throw updWalErr;
+
       toast({
-        title: `${action === "buy" ? "Purchase" : "Sale"} Successful`,
-        description: `${action === "buy" ? "Bought" : "Sold"} ${cryptoAmount} ${selectedCrypto} for KES ${kesAmount}`,
+        title: "Purchase Successful",
+        description: `Bought ${qty.toFixed(6)} ${selectedCrypto} for KES ${amountKes}`,
       });
       setKesAmount("");
       setSelectedCrypto("");
-    }, 2000);
+    } catch (err: any) {
+      toast({
+        title: "Trade Failed",
+        description: err.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

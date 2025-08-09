@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Smartphone, ArrowRight, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserId } from "@/lib/user";
 
 export const MpesaDeposit = () => {
   const [amount, setAmount] = useState("");
@@ -24,17 +26,61 @@ export const MpesaDeposit = () => {
     }
 
     setIsLoading(true);
-    
-    // Simulate M-Pesa API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const amountNumber = parseFloat(amount);
+      if (isNaN(amountNumber) || amountNumber <= 0) {
+        throw new Error("Enter a valid amount greater than 0");
+      }
+      const userId = getUserId();
+
+      // Record transaction
+      const { error: txError } = await supabase.from("transactions").insert([
+        {
+          user_id: userId,
+          type: "deposit",
+          amount_kes: amountNumber,
+          status: "completed",
+        },
+      ]);
+      if (txError) throw txError;
+
+      // Upsert wallet balance
+      const { data: existing, error: fetchErr } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
+
+      if (!existing) {
+        const { error: insertErr } = await supabase.from("wallets").insert([
+          { user_id: userId, balance_kes: amountNumber },
+        ]);
+        if (insertErr) throw insertErr;
+      } else {
+        const { error: updateErr } = await supabase
+          .from("wallets")
+          .update({ balance_kes: (Number(existing.balance_kes) || 0) + amountNumber })
+          .eq("id", existing.id);
+        if (updateErr) throw updateErr;
+      }
+
       toast({
-        title: "Deposit Initiated",
-        description: `STK push sent to ${phoneNumber}. Please complete the payment on your phone.`,
+        title: "Deposit Successful",
+        description: `KES ${amountNumber.toLocaleString()} added to your wallet.`,
       });
       setAmount("");
       setPhoneNumber("");
-    }, 2000);
+    } catch (err: any) {
+      toast({
+        title: "Deposit Failed",
+        description: err.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+
   };
 
   return (
