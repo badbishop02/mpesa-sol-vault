@@ -33,41 +33,19 @@ export const MpesaDeposit = () => {
       }
       const userId = getUserId();
 
-      // Record transaction
-      const { error: txError } = await supabase.from("transactions").insert([
-        {
+      const { data, error } = await supabase.functions.invoke("mpesa-stk-push", {
+        body: {
+          amount: amountNumber,
+          phone: phoneNumber,
           user_id: userId,
-          type: "deposit",
-          amount_kes: amountNumber,
-          status: "completed",
         },
-      ]);
-      if (txError) throw txError;
-
-      // Upsert wallet balance
-      const { data: existing, error: fetchErr } = await supabase
-        .from("wallets")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (fetchErr) throw fetchErr;
-
-      if (!existing) {
-        const { error: insertErr } = await supabase.from("wallets").insert([
-          { user_id: userId, balance_kes: amountNumber },
-        ]);
-        if (insertErr) throw insertErr;
-      } else {
-        const { error: updateErr } = await supabase
-          .from("wallets")
-          .update({ balance_kes: (Number(existing.balance_kes) || 0) + amountNumber })
-          .eq("id", existing.id);
-        if (updateErr) throw updateErr;
-      }
+      });
+      if (error) throw error;
 
       toast({
-        title: "Deposit Successful",
-        description: `KES ${amountNumber.toLocaleString()} added to your wallet.`,
+        title: "STK Push Sent",
+        description:
+          "Check your phone and enter M-Pesa PIN. Your wallet updates instantly after confirmation.",
       });
       setAmount("");
       setPhoneNumber("");
