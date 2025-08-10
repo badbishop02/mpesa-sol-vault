@@ -14,6 +14,23 @@ export const MpesaDeposit = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // Kenyan phone normalization: accepts 07XXXXXXXX, 7XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX
+  const normalizeKenyanPhone = (input: string) => {
+    const digits = input.replace(/\D/g, "");
+    let p = digits;
+    if (p.startsWith("0")) p = "254" + p.slice(1);
+    else if (p.startsWith("7")) p = "254" + p;
+    else if (p.startsWith("254")) {
+      // ok
+    } else if (p.startsWith("2547") === false && p.startsWith("+2547")) {
+      p = p.replace(/^\+/, "");
+    }
+    if (!/^2547\d{8}$/.test(p)) {
+      throw new Error("Enter a valid Kenyan phone e.g. 2547XXXXXXXX");
+    }
+    return p;
+  };
+
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !phoneNumber) {
@@ -31,12 +48,14 @@ export const MpesaDeposit = () => {
       if (isNaN(amountNumber) || amountNumber <= 0) {
         throw new Error("Enter a valid amount greater than 0");
       }
+
+      const normalizedPhone = normalizeKenyanPhone(phoneNumber);
       const userId = getUserId();
 
-      const { data, error } = await supabase.functions.invoke("mpesa-stk-push", {
+      const { error } = await supabase.functions.invoke("mpesa-stk-push", {
         body: {
           amount: amountNumber,
-          phone: phoneNumber,
+          phone: normalizedPhone,
           user_id: userId,
         },
       });
@@ -58,7 +77,6 @@ export const MpesaDeposit = () => {
     } finally {
       setIsLoading(false);
     }
-
   };
 
   return (
@@ -80,10 +98,11 @@ export const MpesaDeposit = () => {
             <Input
               id="phone"
               type="tel"
-              placeholder="254712345678"
+              placeholder="2547XXXXXXXX"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               className="bg-secondary/50 border-border"
+              aria-label="M-Pesa phone number"
             />
           </div>
           
@@ -96,6 +115,10 @@ export const MpesaDeposit = () => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="bg-secondary/50 border-border"
+              aria-label="Deposit amount in Kenyan Shillings"
+              min={1}
+              step={1}
+              inputMode="numeric"
             />
           </div>
           

@@ -1,6 +1,7 @@
-import { Bell, Settings, User } from "lucide-react";
+import { Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { NotificationsPopover } from "@/components/NotificationsPopover";
 
 export const WalletHeader = () => {
   return (
@@ -16,10 +17,7 @@ export const WalletHeader = () => {
       </div>
       
       <div className="flex items-center space-x-3">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-3 w-3 bg-danger rounded-full"></span>
-        </Button>
+        <NotificationsPopover />
         
         <Button variant="ghost" size="icon">
           <Settings className="h-5 w-5" />
