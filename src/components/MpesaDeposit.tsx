@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Smartphone, ArrowRight, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getUserId } from "@/lib/user";
 
 export const MpesaDeposit = () => {
   const [amount, setAmount] = useState("");
@@ -50,13 +49,11 @@ export const MpesaDeposit = () => {
       }
 
       const normalizedPhone = normalizeKenyanPhone(phoneNumber);
-      const userId = getUserId();
 
       const { error } = await supabase.functions.invoke("mpesa-stk-push", {
         body: {
           amount: amountNumber,
           phone: normalizedPhone,
-          user_id: userId,
         },
       });
       if (error) throw error;

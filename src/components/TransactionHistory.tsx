@@ -2,7 +2,6 @@ import { ArrowUpRight, ArrowDownLeft, Plus, Repeat } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getUserId } from "@/lib/user";
 
 
 interface Transaction {
@@ -19,8 +18,10 @@ export const TransactionHistory = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    const userId = getUserId();
     const fetchTx = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) return;
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
@@ -40,22 +41,22 @@ export const TransactionHistory = () => {
           })) as Transaction[]
         );
       }
+
+      const channel = supabase
+        .channel("transactions-changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${userId}` },
+          () => fetchTx()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     };
 
     fetchTx();
-
-    const channel = supabase
-      .channel("transactions-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "transactions", filter: `user_id=eq.${userId}` },
-        () => fetchTx()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
 

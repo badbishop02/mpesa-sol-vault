@@ -55,13 +55,27 @@ serve(async (req) => {
   }
 
   try {
-    const { amount, phone, user_id } = await req.json();
-    if (!amount || !phone || !user_id) {
-      return new Response(JSON.stringify({ error: "amount, phone and user_id are required" }), {
+    const { amount, phone } = await req.json();
+    if (!amount || !phone) {
+      return new Response(JSON.stringify({ error: "amount and phone are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    // Create a client that forwards the caller's JWT so RLS uses auth.uid()
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: req.headers.get("Authorization") || "" } },
+    });
+
+    const { data: userRes, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userRes?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    const user_id = userRes.user.id;
 
     const accessToken = await getAccessToken();
 
@@ -99,9 +113,7 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Log pending payment
+    // Log pending payment under the authenticated user
     await supabase.from("mpesa_payments").insert([
       {
         user_id,

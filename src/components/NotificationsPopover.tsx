@@ -5,7 +5,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getUserId } from "@/lib/user";
 
 interface NotificationItem {
   id: string;
@@ -19,10 +18,9 @@ export const NotificationsPopover = () => {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
-  const userId = useMemo(() => getUserId(), []);
 
   useEffect(() => {
-    const fetchInitial = async () => {
+    const fetchInitial = async (userId: string) => {
       const { data } = await supabase
         .from("transactions")
         .select("id, created_at, type, amount_kes, status")
@@ -41,32 +39,37 @@ export const NotificationsPopover = () => {
       setUnread(mapped.length);
     };
 
-    fetchInitial();
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data.user?.id;
+      if (!userId) return;
 
-    const channel = supabase
-      .channel("txn-notifications")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "transactions", filter: `user_id=eq.${userId}` },
-        (payload) => {
-          const t = payload.new as any;
-          const newItem: NotificationItem = {
-            id: t.id,
-            title: `${String(t.type).toUpperCase()} ${t.status === "completed" ? "successful" : t.status}`,
-            description: `${t.type === "deposit" ? "Deposit" : t.type} of KES ${Number(t.amount_kes || 0).toLocaleString()}`,
-            created_at: String(t.created_at),
-            status: String(t.status),
-          };
-          setItems((prev) => [newItem, ...prev].slice(0, 20));
-          setUnread((c) => c + 1);
-        }
-      )
-      .subscribe();
+      fetchInitial(userId);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
+      const channel = supabase
+        .channel("txn-notifications")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "transactions", filter: `user_id=eq.${userId}` },
+          (payload) => {
+            const t = payload.new as any;
+            const newItem: NotificationItem = {
+              id: t.id,
+              title: `${String(t.type).toUpperCase()} ${t.status === "completed" ? "successful" : t.status}`,
+              description: `${t.type === "deposit" ? "Deposit" : t.type} of KES ${Number(t.amount_kes || 0).toLocaleString()}`,
+              created_at: String(t.created_at),
+              status: String(t.status),
+            };
+            setItems((prev) => [newItem, ...prev].slice(0, 20));
+            setUnread((c) => c + 1);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    });
+  }, []);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);

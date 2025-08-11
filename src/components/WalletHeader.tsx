@@ -2,6 +2,7 @@ import { Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsPopover } from "@/components/NotificationsPopover";
+import { Link } from "react-router-dom";
 
 export const WalletHeader = () => {
   return (
@@ -23,12 +24,14 @@ export const WalletHeader = () => {
           <Settings className="h-5 w-5" />
         </Button>
         
-        <Avatar className="h-8 w-8">
-          <AvatarImage src="/placeholder-user.jpg" />
-          <AvatarFallback className="crypto-gradient text-white text-sm">
-            <User className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
+        <Link to="/profile" aria-label="Profile">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src="/placeholder-user.jpg" alt="User avatar" />
+            <AvatarFallback className="crypto-gradient text-white text-sm">
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+        </Link>
       </div>
     </header>
   );

@@ -1,7 +1,6 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getUserId } from "@/lib/user";
 
 interface CryptoAsset {
   symbol: "SOL" | "USDT" | "BTC";
@@ -12,11 +11,7 @@ interface CryptoAsset {
   icon: string;
 }
 
-const PRICE_MAP: Record<string, number> = {
-  SOL: 18000, // KES
-  USDT: 145,
-  BTC: 5825000,
-};
+const PRICE_MAP: Record<string, number> = {}; // Live prices injected in UI; fallback 0
 
 const ICON_MAP: Record<string, string> = { SOL: "🔥", USDT: "💵", BTC: "₿" };
 const NAME_MAP: Record<string, string> = { SOL: "Solana", USDT: "Tether USD", BTC: "Bitcoin" };
@@ -25,8 +20,11 @@ export const CryptoPortfolio = () => {
   const [assets, setAssets] = useState<CryptoAsset[]>([]);
 
   useEffect(() => {
-    const userId = getUserId();
     const fetchHoldings = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) return;
+
       const { data, error } = await supabase
         .from("holdings")
         .select("*")
@@ -39,7 +37,7 @@ export const CryptoPortfolio = () => {
             name: NAME_MAP[h.symbol] ?? h.symbol,
             balance: Number(h.amount) || 0,
             value: (Number(h.amount) || 0) * price,
-            change: h.symbol === "SOL" ? 8.2 : h.symbol === "USDT" ? 0.1 : -2.1,
+            change: h.symbol === "SOL" ? 0 : h.symbol === "USDT" ? 0 : 0,
             icon: ICON_MAP[h.symbol] ?? "💠",
           } as CryptoAsset;
         });
@@ -49,20 +47,27 @@ export const CryptoPortfolio = () => {
 
     fetchHoldings();
 
-    const channel = supabase
-      .channel("holdings-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "holdings", filter: `user_id=eq.${userId}` },
-        fetchHoldings
-      )
-      .subscribe();
+    supabase.auth.onAuthStateChange(() => {
+      fetchHoldings();
+    });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    supabase.auth.getUser().then(({ data }) => {
+      const userId = data.user?.id;
+      if (!userId) return;
+      const channel = supabase
+        .channel("holdings-changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "holdings", filter: `user_id=eq.${userId}` },
+          fetchHoldings
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    });
   }, []);
-
 
   return (
     <div className="crypto-card">

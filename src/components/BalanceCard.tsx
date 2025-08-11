@@ -2,7 +2,6 @@ import { Eye, EyeOff, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getUserId } from "@/lib/user";
 
 
 export const BalanceCard = () => {
@@ -11,8 +10,11 @@ export const BalanceCard = () => {
   const changePercent = 12.5;
 
   useEffect(() => {
-    const userId = getUserId();
     const fetchBalance = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) return;
+
       const { data, error } = await supabase
         .from("wallets")
         .select("balance_kes")
@@ -21,28 +23,29 @@ export const BalanceCard = () => {
       if (!error) {
         setTotalBalance(Number(data?.balance_kes ?? 0));
       }
-    };
-    fetchBalance();
 
-    const channel = supabase
-      .channel("wallets-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${userId}` },
-        (payload) => {
-          const newRow: any = (payload as any).new;
-          if (newRow?.balance_kes !== undefined) {
-            setTotalBalance(Number(newRow.balance_kes));
-          } else {
-            fetchBalance();
+      const channel = supabase
+        .channel("wallets-changes")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${userId}` },
+          (payload) => {
+            const newRow: any = (payload as any).new;
+            if (newRow?.balance_kes !== undefined) {
+              setTotalBalance(Number(newRow.balance_kes));
+            } else {
+              fetchBalance();
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
+      return () => {
+        supabase.removeChannel(channel);
+      };
     };
+
+    fetchBalance();
   }, []);
 
   return (

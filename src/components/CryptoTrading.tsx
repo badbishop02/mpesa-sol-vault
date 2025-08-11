@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TrendingUp, Coins, ArrowUpRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { getUserId } from "@/lib/user";
+import { usePrices } from "@/hooks/use-prices";
 
 interface CryptoOption {
   symbol: string;
@@ -24,42 +24,22 @@ export const CryptoTrading = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const { prices, loading } = usePrices();
+
   const cryptoOptions: CryptoOption[] = [
-    {
-      symbol: "SOL",
-      name: "Solana",
-      price: 18000, // KES
-      change: 8.2,
-      icon: "🔥"
-    },
-    {
-      symbol: "USDT",
-      name: "Tether USD",
-      price: 145, // KES
-      change: 0.1,
-      icon: "💵"
-    },
-    {
-      symbol: "BTC",
-      name: "Bitcoin",
-      price: 5825000, // KES
-      change: -2.1,
-      icon: "₿"
-    }
+    { symbol: "SOL", name: "Solana", price: prices.SOL ?? 0, change: 0, icon: "🔥" },
+    { symbol: "USDT", name: "Tether USD", price: prices.USDT ?? 0, change: 0, icon: "💵" },
+    { symbol: "BTC", name: "Bitcoin", price: prices.BTC ?? 0, change: 0, icon: "₿" },
   ];
 
-  const selectedCryptoData = cryptoOptions.find(crypto => crypto.symbol === selectedCrypto);
-  const cryptoAmount = kesAmount && selectedCryptoData 
+  const selectedCryptoData = cryptoOptions.find((crypto) => crypto.symbol === selectedCrypto);
+  const cryptoAmount = kesAmount && selectedCryptoData && selectedCryptoData.price > 0
     ? (parseFloat(kesAmount) / selectedCryptoData.price).toFixed(6)
     : "0";
 
   const handleTrade = async (action: "buy" | "sell") => {
     if (!selectedCrypto || !kesAmount) {
-      toast({
-        title: "Error",
-        description: "Please select cryptocurrency and enter amount",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please select cryptocurrency and enter amount", variant: "destructive" });
       return;
     }
     if (action !== "buy") {
@@ -71,7 +51,10 @@ export const CryptoTrading = () => {
     try {
       const amountKes = parseFloat(kesAmount);
       if (isNaN(amountKes) || amountKes <= 0) throw new Error("Enter a valid KES amount");
-      const userId = getUserId();
+
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) throw new Error("Please sign in again.");
 
       // Check wallet balance
       const { data: wallet, error: wErr } = await supabase
@@ -83,8 +66,9 @@ export const CryptoTrading = () => {
       const currentBalance = Number(wallet?.balance_kes ?? 0);
       if (currentBalance < amountKes) throw new Error("Insufficient KES balance");
 
-      // Compute crypto amount
+      // Compute crypto amount using live price
       const price = selectedCryptoData!.price;
+      if (!price || price <= 0) throw new Error("Price unavailable. Try again in a moment.");
       const qty = amountKes / price;
 
       // Insert transaction
@@ -129,18 +113,11 @@ export const CryptoTrading = () => {
         .eq("id", wallet!.id);
       if (updWalErr) throw updWalErr;
 
-      toast({
-        title: "Purchase Successful",
-        description: `Bought ${qty.toFixed(6)} ${selectedCrypto} for KES ${amountKes}`,
-      });
+      toast({ title: "Purchase Successful", description: `Bought ${qty.toFixed(6)} ${selectedCrypto} for KES ${amountKes}` });
       setKesAmount("");
       setSelectedCrypto("");
     } catch (err: any) {
-      toast({
-        title: "Trade Failed",
-        description: err.message || "Something went wrong.",
-        variant: "destructive",
-      });
+      toast({ title: "Trade Failed", description: err.message || "Something went wrong.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -153,11 +130,9 @@ export const CryptoTrading = () => {
           <Coins className="h-5 w-5 text-primary" />
           <span>Crypto Trading</span>
         </CardTitle>
-        <CardDescription>
-          Buy and sell cryptocurrencies instantly
-        </CardDescription>
+        <CardDescription>Buy and sell cryptocurrencies instantly</CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         <Tabs defaultValue="buy" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -168,7 +143,7 @@ export const CryptoTrading = () => {
               Sell Crypto
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="buy" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label>Select Cryptocurrency</Label>
@@ -192,7 +167,7 @@ export const CryptoTrading = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="kes-amount">Amount (KES)</Label>
               <Input
@@ -204,7 +179,7 @@ export const CryptoTrading = () => {
                 className="bg-secondary/50 border-border"
               />
             </div>
-            
+
             {selectedCryptoData && kesAmount && (
               <div className="p-3 bg-secondary/30 rounded-lg">
                 <div className="flex items-center justify-between text-sm">
@@ -217,12 +192,8 @@ export const CryptoTrading = () => {
                 </div>
               </div>
             )}
-            
-            <Button
-              onClick={() => handleTrade("buy")}
-              disabled={isLoading || !selectedCrypto || !kesAmount}
-              className="w-full success-gradient hover:opacity-90 transition-smooth"
-            >
+
+            <Button onClick={() => handleTrade("buy")} disabled={loading || isLoading || !selectedCrypto || !kesAmount} className="w-full success-gradient hover:opacity-90 transition-smooth">
               {isLoading ? (
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -236,7 +207,7 @@ export const CryptoTrading = () => {
               )}
             </Button>
           </TabsContent>
-          
+
           <TabsContent value="sell" className="space-y-4 mt-4">
             <div className="text-center p-8 text-muted-foreground">
               <ArrowUpRight className="h-12 w-12 mx-auto mb-4 opacity-50" />
