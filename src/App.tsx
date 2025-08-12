@@ -28,7 +28,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      
         <Toaster />
         <Sonner />
         <ConnectionProvider endpoint={endpoint}>
@@ -48,7 +48,7 @@ const App = () => {
             </WalletModalProvider>
           </WalletProvider>
         </ConnectionProvider>
-      </TooltipProvider>
+      
     </QueryClientProvider>
   );
 };
