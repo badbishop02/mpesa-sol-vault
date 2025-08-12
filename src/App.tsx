@@ -11,7 +11,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
-import { PhantomWalletAdapter, SolflareWalletAdapter, BackpackWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import Transactions from "./pages/Transactions";
 import Support from "./pages/Support";
@@ -24,7 +24,6 @@ const App = () => {
   const wallets = [
     new PhantomWalletAdapter(),
     new SolflareWalletAdapter({ network }),
-    new BackpackWalletAdapter(),
   ];
 
   return (
