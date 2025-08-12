@@ -5,11 +5,8 @@ import { CryptoPortfolio } from "@/components/CryptoPortfolio";
 import { MpesaDeposit } from "@/components/MpesaDeposit";
 import { CryptoTrading } from "@/components/CryptoTrading";
 import { TransactionHistory } from "@/components/TransactionHistory";
-import { useEffect } from "react";
-import ChatbotWidget from "@/components/ChatbotWidget";
 
 const Index = () => {
-  useEffect(() => { document.title = "Home | WalletOS"; }, []);
   return (
     <div className="min-h-screen bg-background">
       <WalletHeader />
@@ -39,7 +36,6 @@ const Index = () => {
           <TransactionHistory />
         </div>
       </main>
-      <ChatbotWidget />
     </div>
   );
 };
