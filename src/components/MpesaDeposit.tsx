@@ -84,7 +84,7 @@ export const MpesaDeposit = () => {
           <span>M-Pesa Deposit</span>
         </CardTitle>
         <CardDescription>
-          Add money to your wallet instantly via M-Pesa
+          Add money to your WalletOS instantly via M-Pesa
         </CardDescription>
       </CardHeader>
       
