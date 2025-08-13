@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import ConnectWalletCard from "@/components/ConnectWalletCard";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -44,7 +45,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto p-6">
+      <main className="container mx-auto p-6 space-y-6">
         <Card className="max-w-2xl mx-auto crypto-card border-0">
           <CardHeader>
             <CardTitle>Your Profile</CardTitle>
@@ -69,6 +70,10 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
+
+        <div className="max-w-2xl mx-auto">
+          <ConnectWalletCard />
+        </div>
       </main>
     </div>
   );

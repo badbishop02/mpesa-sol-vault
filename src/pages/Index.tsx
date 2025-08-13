@@ -5,6 +5,8 @@ import { CryptoPortfolio } from "@/components/CryptoPortfolio";
 import { MpesaDeposit } from "@/components/MpesaDeposit";
 import { CryptoTrading } from "@/components/CryptoTrading";
 import { TransactionHistory } from "@/components/TransactionHistory";
+import ConnectWalletCard from "@/components/ConnectWalletCard";
+import ChatbotWidget from "@/components/ChatbotWidget";
 
 const Index = () => {
   return (
@@ -27,6 +29,7 @@ const Index = () => {
           <CryptoPortfolio />
           <div className="space-y-6">
             <MpesaDeposit />
+            <ConnectWalletCard />
           </div>
         </div>
         
@@ -36,6 +39,7 @@ const Index = () => {
           <TransactionHistory />
         </div>
       </main>
+      <ChatbotWidget />
     </div>
   );
 };
