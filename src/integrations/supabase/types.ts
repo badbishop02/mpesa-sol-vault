@@ -7,13 +7,69 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
+      copy_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          id: string
+          is_active: boolean
+          max_notional: number | null
+          max_slippage: number
+          sizing_type: string
+          sizing_value: number
+          stop_loss_pct: number | null
+          take_profit_pct: number | null
+          trailing_stop_pct: number | null
+          updated_at: string
+          whale_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          id?: string
+          is_active?: boolean
+          max_notional?: number | null
+          max_slippage?: number
+          sizing_type?: string
+          sizing_value?: number
+          stop_loss_pct?: number | null
+          take_profit_pct?: number | null
+          trailing_stop_pct?: number | null
+          updated_at?: string
+          whale_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          id?: string
+          is_active?: boolean
+          max_notional?: number | null
+          max_slippage?: number
+          sizing_type?: string
+          sizing_value?: number
+          stop_loss_pct?: number | null
+          take_profit_pct?: number | null
+          trailing_stop_pct?: number | null
+          updated_at?: string
+          whale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copy_follows_whale_id_fkey"
+            columns: ["whale_id"]
+            isOneToOne: false
+            referencedRelation: "whales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holdings: {
         Row: {
           amount: number
@@ -89,6 +145,39 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_holdings: {
+        Row: {
+          amount: number
+          avg_buy_price: number
+          id: string
+          token_mint: string
+          total_invested: number
+          unrealized_pnl: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          avg_buy_price?: number
+          id?: string
+          token_mint: string
+          total_invested?: number
+          unrealized_pnl?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          avg_buy_price?: number
+          id?: string
+          token_mint?: string
+          total_invested?: number
+          unrealized_pnl?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -102,6 +191,7 @@ export type Database = {
           phone_verified: boolean | null
           updated_at: string
           username: string | null
+          wallet_address: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -115,6 +205,7 @@ export type Database = {
           phone_verified?: boolean | null
           updated_at?: string
           username?: string | null
+          wallet_address?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -128,6 +219,121 @@ export type Database = {
           phone_verified?: boolean | null
           updated_at?: string
           username?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      solana_wallets: {
+        Row: {
+          created_at: string
+          encrypted_private_key: string
+          id: string
+          is_testnet: boolean
+          updated_at: string
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_private_key: string
+          id?: string
+          is_testnet?: boolean
+          updated_at?: string
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_private_key?: string
+          id?: string
+          is_testnet?: boolean
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      telegram_sources: {
+        Row: {
+          auto_execute: boolean
+          created_at: string
+          id: string
+          is_active: boolean
+          telegram_link: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_execute?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          telegram_link: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_execute?: boolean
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          telegram_link?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trade_executions: {
+        Row: {
+          amount: number
+          created_at: string
+          error_message: string | null
+          fee_amount: number
+          fee_wallet: string
+          id: string
+          price_per_token: number | null
+          source_id: string | null
+          source_type: string
+          status: string
+          token_mint: string
+          trade_type: string
+          transaction_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          error_message?: string | null
+          fee_amount?: number
+          fee_wallet?: string
+          id?: string
+          price_per_token?: number | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          token_mint: string
+          trade_type: string
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          error_message?: string | null
+          fee_amount?: number
+          fee_wallet?: string
+          id?: string
+          price_per_token?: number | null
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          token_mint?: string
+          trade_type?: string
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -164,6 +370,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          auto_execute_enabled: boolean
+          created_at: string
+          default_slippage: number
+          email_notifications: boolean
+          id: string
+          max_daily_loss: number | null
+          risk_tolerance: string
+          telegram_notifications: boolean
+          two_fa_enabled: boolean
+          two_fa_secret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_execute_enabled?: boolean
+          created_at?: string
+          default_slippage?: number
+          email_notifications?: boolean
+          id?: string
+          max_daily_loss?: number | null
+          risk_tolerance?: string
+          telegram_notifications?: boolean
+          two_fa_enabled?: boolean
+          two_fa_secret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_execute_enabled?: boolean
+          created_at?: string
+          default_slippage?: number
+          email_notifications?: boolean
+          id?: string
+          max_daily_loss?: number | null
+          risk_tolerance?: string
+          telegram_notifications?: boolean
+          two_fa_enabled?: boolean
+          two_fa_secret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallets: {
         Row: {
           balance_kes: number
@@ -185,6 +436,48 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      whales: {
+        Row: {
+          avg_hold_time: number
+          created_at: string
+          follower_count: number
+          id: string
+          last_scored_at: string
+          realized_pnl: number
+          score: number
+          trade_count: number
+          updated_at: string
+          wallet_address: string
+          win_rate: number
+        }
+        Insert: {
+          avg_hold_time?: number
+          created_at?: string
+          follower_count?: number
+          id?: string
+          last_scored_at?: string
+          realized_pnl?: number
+          score?: number
+          trade_count?: number
+          updated_at?: string
+          wallet_address: string
+          win_rate?: number
+        }
+        Update: {
+          avg_hold_time?: number
+          created_at?: string
+          follower_count?: number
+          id?: string
+          last_scored_at?: string
+          realized_pnl?: number
+          score?: number
+          trade_count?: number
+          updated_at?: string
+          wallet_address?: string
+          win_rate?: number
         }
         Relationships: []
       }
