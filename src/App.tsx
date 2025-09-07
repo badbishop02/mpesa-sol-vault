@@ -9,6 +9,9 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Transactions from "./pages/Transactions";
 import Support from "./pages/Support";
+import Whales from "./pages/Whales";
+import Portfolio from "./pages/Portfolio";
+import TelegramBot from "./pages/TelegramBot";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -24,6 +27,9 @@ const App = () => (
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/whales" element={<ProtectedRoute><Whales /></ProtectedRoute>} />
+          <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
+          <Route path="/telegram" element={<ProtectedRoute><TelegramBot /></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

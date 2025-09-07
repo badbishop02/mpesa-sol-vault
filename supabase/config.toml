@@ -8,3 +8,21 @@ verify_jwt = false
 
 [functions.mpesa-c2b-register]
 verify_jwt = false
+
+[functions.wallet-generator]
+verify_jwt = true
+
+[functions.solana-transfer]
+verify_jwt = true
+
+[functions.whale-tracker]
+verify_jwt = false
+
+[functions.copy-trading]
+verify_jwt = true
+
+[functions.telegram-ingest]
+verify_jwt = false
+
+[functions.portfolio-tracker]
+verify_jwt = true
