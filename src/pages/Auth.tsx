@@ -123,6 +123,16 @@ const Auth = () => {
           <CardDescription>Secure login and signup</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Security Disclaimers */}
+          <div className="mb-6 p-4 bg-accent/5 border border-accent/20 rounded-lg">
+            <h4 className="font-medium text-accent mb-2">📝 Important Disclaimers</h4>
+            <ul className="text-xs text-muted-foreground space-y-1">
+              <li>• This is not investment advice. Copy-trading involves risk. Comply with your local regulations.</li>
+              <li>• Store your private key safely in a secure location. Loss of this key means loss of access to your funds.</li>
+              <li>• All transactions occur on Solana testnet for safety during development.</li>
+            </ul>
+          </div>
+
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
@@ -180,6 +190,7 @@ const Auth = () => {
 
               <div className="text-xs text-muted-foreground border border-border rounded-md p-3">
                 Your mobile number will be used for transactions. Please ensure it is correct. Email and mobile number changes require contacting support.
+                By creating an account, you acknowledge that you understand the risks of cryptocurrency trading and agree to our terms.
               </div>
 
               <Button onClick={handleSignUp} disabled={loading} className="w-full">{loading ? "Please wait" : "Create Account"}</Button>

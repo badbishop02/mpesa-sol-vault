@@ -92,14 +92,24 @@ const Portfolio = () => {
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const formatTokenAmount = (amount: number, decimals = 6) => {
+    return amount.toFixed(decimals);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg">Loading portfolio...</div>
-          </div>
-        </main>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Loading portfolio...</p>
+        </div>
       </div>
     );
   }

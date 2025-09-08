@@ -7,7 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { WalletHeader } from "@/components/WalletHeader";
 import { CryptoSend } from "@/components/CryptoSend";
 import { CryptoReceive } from "@/components/CryptoReceive";
+import { WalletSetup } from "@/components/WalletSetup";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, Shield } from "lucide-react";
 
 const Transactions = () => {
   const { toast } = useToast();
@@ -18,18 +21,43 @@ const Transactions = () => {
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [hasWallet, setHasWallet] = useState<boolean | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     document.title = "Transactions | WalletOS";
-    const fetchWallet = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
-      if (!userId) return;
-      const { data } = await supabase.from("wallets").select("balance_kes").eq("user_id", userId).maybeSingle();
-      setWalletBalance(Number(data?.balance_kes ?? 0));
+    
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      
+      if (user) {
+        // Check if user has a Solana wallet
+        const { data: wallet } = await supabase
+          .from('solana_wallets')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        setHasWallet(!!wallet);
+        
+        // Fetch KES balance from wallets table
+        const { data } = await supabase.from("wallets").select("balance_kes").eq("user_id", user.id).maybeSingle();
+        setWalletBalance(Number(data?.balance_kes ?? 0));
+      }
     };
-    fetchWallet();
+    
+    getUser();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const handleWalletCreated = () => {
+    setHasWallet(true);
+  };
 
   const sellFeeRate = 0.035; // 3.5%
   const transferFeeRate = 0.02; // 2%
@@ -106,9 +134,71 @@ const Transactions = () => {
     }
   };
 
+  // Show wallet setup if user doesn't have a wallet
+  if (hasWallet === false) {
+    return (
+      <main className="container mx-auto p-6 space-y-6">
+        <div className="max-w-2xl mx-auto">
+          <Alert className="mb-6">
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              You need to create a Solana wallet before you can send or receive crypto.
+            </AlertDescription>
+          </Alert>
+          <WalletSetup onWalletCreated={handleWalletCreated} />
+        </div>
+      </main>
+    );
+  }
+
+  if (hasWallet === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Loading transactions...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto p-6 grid lg:grid-cols-3 gap-6">
+    <main className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Transactions</h1>
+          <p className="text-muted-foreground">Send, receive, and manage your crypto</p>
+        </div>
+      </div>
+
+      {/* Withdraw Maintenance Notice */}
+      <Alert className="border-accent/20 bg-accent/5">
+        <AlertTriangle className="h-4 w-4 text-accent" />
+        <AlertDescription>
+          <strong>Notice:</strong> Withdraw feature is currently under maintenance. 
+          Send/Receive functions are available on testnet with 2.5% fees.
+        </AlertDescription>
+      </Alert>
+
+      {/* Main Transactions Interface */}
+      <Tabs defaultValue="send" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="send">Send</TabsTrigger>
+          <TabsTrigger value="receive">Receive</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="send">
+          <CryptoSend />
+        </TabsContent>
+
+        <TabsContent value="receive">
+          <CryptoReceive />
+        </TabsContent>
+      </Tabs>
+
+      {/* Legacy functionality - keep for compatibility */}
+      <div className="grid lg:grid-cols-3 gap-6">
         <Card className="crypto-card border-0 lg:col-span-1">
           <CardHeader>
             <CardTitle>Transfer Crypto</CardTitle>
@@ -167,8 +257,8 @@ const Transactions = () => {
             </form>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 };
 
