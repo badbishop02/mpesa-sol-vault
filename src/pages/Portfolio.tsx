@@ -92,13 +92,6 @@ const Portfolio = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   const formatTokenAmount = (amount: number, decimals = 6) => {
     return amount.toFixed(decimals);
   };
