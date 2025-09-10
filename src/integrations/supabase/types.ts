@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          password_hash: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          password_hash: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          password_hash?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       copy_follows: {
         Row: {
           created_at: string
@@ -70,6 +100,54 @@ export type Database = {
           },
         ]
       }
+      crypto_trades: {
+        Row: {
+          amount_from: number
+          amount_to: number
+          created_at: string
+          fee_amount: number
+          from_currency: string
+          id: string
+          mpesa_receipt: string | null
+          status: string
+          to_currency: string
+          transaction_hash: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_from: number
+          amount_to: number
+          created_at?: string
+          fee_amount?: number
+          from_currency: string
+          id?: string
+          mpesa_receipt?: string | null
+          status?: string
+          to_currency: string
+          transaction_hash?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_from?: number
+          amount_to?: number
+          created_at?: string
+          fee_amount?: number
+          from_currency?: string
+          id?: string
+          mpesa_receipt?: string | null
+          status?: string
+          to_currency?: string
+          transaction_hash?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           amount: number
@@ -93,6 +171,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      kyc_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          document_url: string
+          id: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          document_url: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          document_url?: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_documents_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mpesa_payments: {
         Row: {
@@ -180,46 +305,58 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string | null
           avatar_url: string | null
           birthday: string | null
           country: string | null
           created_at: string
           display_name: string | null
+          encrypted_private_key: string | null
           full_name: string | null
           id: string
+          kyc_status: string | null
           phone: string | null
           phone_verified: boolean | null
           updated_at: string
           username: string | null
           wallet_address: string | null
+          wallet_public_key: string | null
         }
         Insert: {
+          account_status?: string | null
           avatar_url?: string | null
           birthday?: string | null
           country?: string | null
           created_at?: string
           display_name?: string | null
+          encrypted_private_key?: string | null
           full_name?: string | null
           id: string
+          kyc_status?: string | null
           phone?: string | null
           phone_verified?: boolean | null
           updated_at?: string
           username?: string | null
           wallet_address?: string | null
+          wallet_public_key?: string | null
         }
         Update: {
+          account_status?: string | null
           avatar_url?: string | null
           birthday?: string | null
           country?: string | null
           created_at?: string
           display_name?: string | null
+          encrypted_private_key?: string | null
           full_name?: string | null
           id?: string
+          kyc_status?: string | null
           phone?: string | null
           phone_verified?: boolean | null
           updated_at?: string
           username?: string | null
           wallet_address?: string | null
+          wallet_public_key?: string | null
         }
         Relationships: []
       }
@@ -370,6 +507,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          sent_by: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          sent_by?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          sent_by?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           auto_execute_enabled: boolean
@@ -486,7 +664,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      encrypt_private_key: {
+        Args: { private_key: string; user_salt: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

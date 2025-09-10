@@ -26,3 +26,15 @@ verify_jwt = false
 
 [functions.portfolio-tracker]
 verify_jwt = true
+
+[functions.secure-crypto-buy]
+verify_jwt = true
+
+[functions.mpesa-crypto-callback]
+verify_jwt = false
+
+[functions.admin-auth]
+verify_jwt = false
+
+[functions.admin-operations]
+verify_jwt = false

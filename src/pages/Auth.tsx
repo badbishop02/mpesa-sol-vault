@@ -86,9 +86,21 @@ const Auth = () => {
 
   const handleSignIn = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+    
+    // Generate wallet on first login if needed
+    if (data.user) {
+      try {
+        await supabase.functions.invoke('wallet-generator', {
+          body: { user_id: data.user.id }
+        });
+      } catch (walletError) {
+        console.log('Wallet generation handled separately');
+      }
+    }
+    
     toast({ title: "Welcome back" });
   };
 
