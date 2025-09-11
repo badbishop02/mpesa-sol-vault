@@ -139,9 +139,10 @@ const Auth = () => {
           <div className="mb-6 p-4 bg-accent/5 border border-accent/20 rounded-lg">
             <h4 className="font-medium text-accent mb-2">📝 Important Disclaimers</h4>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• This is not investment advice. Copy-trading involves risk. Comply with your local regulations.</li>
-              <li>• Store your private key safely in a secure location. Loss of this key means loss of access to your funds.</li>
-              <li>• All transactions occur on Solana testnet for safety during development.</li>
+              <li>• This is not investment advice. Crypto trading involves risk. Trade responsibly.</li>
+              <li>• Your wallet is secured with industry-standard encryption.</li>
+              <li>• All transactions occur on Solana mainnet with real funds.</li>
+              <li>• M-Pesa deposits go to Paybill 400200, Account 20758.</li>
             </ul>
           </div>
 

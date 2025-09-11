@@ -12,6 +12,7 @@ import Support from "./pages/Support";
 import Whales from "./pages/Whales";
 import Portfolio from "./pages/Portfolio";
 import TelegramBot from "./pages/TelegramBot";
+import Admin from "./pages/Admin";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/whales" element={<ProtectedRoute><Whales /></ProtectedRoute>} />
           <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
           <Route path="/telegram" element={<ProtectedRoute><TelegramBot /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

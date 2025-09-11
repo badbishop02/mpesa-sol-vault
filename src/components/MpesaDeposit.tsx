@@ -1,78 +1,74 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Smartphone, ArrowRight, CheckCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { Smartphone, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
+import { useMpesaDeposit, calculateFee, validateAmount, normalizePhone } from "@/hooks/useMpesaDeposit";
 
 export const MpesaDeposit = () => {
   const [amount, setAmount] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [fee, setFee] = useState(0);
+  const [validationError, setValidationError] = useState("");
+  
+  const { submit, loading } = useMpesaDeposit();
 
-  // Kenyan phone normalization: accepts 07XXXXXXXX, 7XXXXXXXX, 2547XXXXXXXX, +2547XXXXXXXX
-  const normalizeKenyanPhone = (input: string) => {
-    const digits = input.replace(/\D/g, "");
-    let p = digits;
-    if (p.startsWith("0")) p = "254" + p.slice(1);
-    else if (p.startsWith("7")) p = "254" + p;
-    else if (p.startsWith("254")) {
-      // ok
-    } else if (p.startsWith("2547") === false && p.startsWith("+2547")) {
-      p = p.replace(/^\+/, "");
+  // Calculate fee dynamically when amount changes
+  useEffect(() => {
+    if (amount) {
+      const amountNum = parseFloat(amount);
+      if (!isNaN(amountNum) && amountNum > 0) {
+        try {
+          validateAmount(amountNum);
+          setFee(calculateFee(amountNum));
+          setValidationError("");
+        } catch (error) {
+          setValidationError((error as Error).message);
+          setFee(0);
+        }
+      } else {
+        setFee(0);
+        setValidationError("");
+      }
+    } else {
+      setFee(0);
+      setValidationError("");
     }
-    if (!/^2547\d{8}$/.test(p)) {
-      throw new Error("Enter a valid Kenyan phone e.g. 2547XXXXXXXX");
+  }, [amount]);
+
+  // Validate phone number on change
+  useEffect(() => {
+    if (phoneNumber) {
+      try {
+        normalizePhone(phoneNumber);
+        setValidationError("");
+      } catch (error) {
+        setValidationError((error as Error).message);
+      }
+    } else {
+      setValidationError("");
     }
-    return p;
-  };
+  }, [phoneNumber]);
 
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!amount || !phoneNumber) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
+      setValidationError("Please fill in all fields");
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const amountNumber = parseFloat(amount);
-      if (isNaN(amountNumber) || amountNumber <= 0) {
-        throw new Error("Enter a valid amount greater than 0");
-      }
+    if (validationError) {
+      return;
+    }
 
-      const normalizedPhone = normalizeKenyanPhone(phoneNumber);
-
-      const { error } = await supabase.functions.invoke("mpesa-stk-push", {
-        body: {
-          amount: amountNumber,
-          phone: normalizedPhone,
-        },
-      });
-      if (error) throw error;
-
-      toast({
-        title: "STK Push Sent",
-        description:
-          "Check your phone and enter M-Pesa PIN. Your wallet updates instantly after confirmation.",
-      });
+    const result = await submit(phoneNumber, amount);
+    
+    if (result.success) {
       setAmount("");
       setPhoneNumber("");
-    } catch (err: any) {
-      toast({
-        title: "Deposit Failed",
-        description: err.message || "Something went wrong.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      setFee(0);
     }
   };
 
@@ -120,16 +116,30 @@ export const MpesaDeposit = () => {
           </div>
           
           <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-            <span className="text-sm text-muted-foreground">Transaction Fee</span>
-            <span className="text-sm font-medium">KES 0</span>
+            <span className="text-sm text-muted-foreground">M-Pesa Fee</span>
+            <span className="text-sm font-medium">KES {fee}</span>
           </div>
+          
+          {fee > 0 && (
+            <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <span className="text-sm text-muted-foreground">You will receive</span>
+              <span className="text-sm font-medium">KES {parseFloat(amount || "0") - fee}</span>
+            </div>
+          )}
+
+          {validationError && (
+            <div className="flex items-center space-x-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <span className="text-sm text-destructive">{validationError}</span>
+            </div>
+          )}
           
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={loading || !!validationError || !amount || !phoneNumber}
             className="w-full crypto-gradient hover:opacity-90 transition-smooth"
           >
-            {isLoading ? (
+            {loading ? (
               <span className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 <span>Processing...</span>

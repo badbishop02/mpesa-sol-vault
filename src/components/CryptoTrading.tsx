@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, Coins, ArrowUpRight } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { TrendingUp, Coins, ArrowUpRight, TrendingDown } from "lucide-react";
+import { useTradeCrypto } from "@/hooks/useTradeCrypto";
+import { getUserHoldings } from "@/services/trading";
 import { usePrices } from "@/hooks/use-prices";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CryptoOption {
   symbol: string;
@@ -21,10 +22,11 @@ interface CryptoOption {
 export const CryptoTrading = () => {
   const [selectedCrypto, setSelectedCrypto] = useState("");
   const [kesAmount, setKesAmount] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [holdings, setHoldings] = useState<Record<string, number>>({});
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const { prices, loading } = usePrices();
+  const { prices, loading: pricesLoading } = usePrices();
+  const { trade, loading: tradeLoading } = useTradeCrypto();
 
   const cryptoOptions: CryptoOption[] = [
     { symbol: "SOL", name: "Solana", price: prices.SOL ?? 0, change: 0, icon: "🔥" },
@@ -32,94 +34,75 @@ export const CryptoTrading = () => {
     { symbol: "BTC", name: "Bitcoin", price: prices.BTC ?? 0, change: 0, icon: "₿" },
   ];
 
+  // Load user and holdings on mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user?.id) {
+        setUserId(userData.user.id);
+        try {
+          const userHoldings = await getUserHoldings(userData.user.id);
+          const holdingsMap = userHoldings.reduce((acc, holding) => {
+            acc[holding.symbol] = Number(holding.amount);
+            return acc;
+          }, {} as Record<string, number>);
+          setHoldings(holdingsMap);
+        } catch (error) {
+          console.error('Failed to load holdings:', error);
+        }
+      }
+    };
+    loadUserData();
+  }, []);
+
   const selectedCryptoData = cryptoOptions.find((crypto) => crypto.symbol === selectedCrypto);
   const cryptoAmount = kesAmount && selectedCryptoData && selectedCryptoData.price > 0
     ? (parseFloat(kesAmount) / selectedCryptoData.price).toFixed(6)
     : "0";
 
+  const maxSellAmount = selectedCrypto ? holdings[selectedCrypto] || 0 : 0;
+  const canSell = maxSellAmount > 0;
+
   const handleTrade = async (action: "buy" | "sell") => {
-    if (!selectedCrypto || !kesAmount) {
-      toast({ title: "Error", description: "Please select cryptocurrency and enter amount", variant: "destructive" });
-      return;
-    }
-    if (action !== "buy") {
-      toast({ title: "Not implemented", description: "Selling will be enabled once holdings exist." });
-      return;
-    }
+    if (!selectedCrypto || !kesAmount) return;
+    
+    const amountKes = parseFloat(kesAmount);
+    if (isNaN(amountKes) || amountKes <= 0) return;
 
-    setIsLoading(true);
-    try {
-      const amountKes = parseFloat(kesAmount);
-      if (isNaN(amountKes) || amountKes <= 0) throw new Error("Enter a valid KES amount");
+    const price = selectedCryptoData?.price;
+    if (!price || price <= 0) return;
 
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
-      if (!userId) throw new Error("Please sign in again.");
-
-      // Check wallet balance
-      const { data: wallet, error: wErr } = await supabase
-        .from("wallets")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (wErr) throw wErr;
-      const currentBalance = Number(wallet?.balance_kes ?? 0);
-      if (currentBalance < amountKes) throw new Error("Insufficient KES balance");
-
-      // Compute crypto amount using live price
-      const price = selectedCryptoData!.price;
-      if (!price || price <= 0) throw new Error("Price unavailable. Try again in a moment.");
-      const qty = amountKes / price;
-
-      // Insert transaction
-      const { error: txErr } = await supabase.from("transactions").insert([
-        {
-          user_id: userId,
-          type: "buy",
-          amount_kes: amountKes,
-          crypto_symbol: selectedCrypto,
-          crypto_amount: qty,
-          status: "completed",
-        },
-      ]);
-      if (txErr) throw txErr;
-
-      // Upsert holding
-      const { data: holding, error: hErr } = await supabase
-        .from("holdings")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("symbol", selectedCrypto)
-        .maybeSingle();
-      if (hErr) throw hErr;
-
-      if (!holding) {
-        const { error: insHoldErr } = await supabase.from("holdings").insert([
-          { user_id: userId, symbol: selectedCrypto, amount: qty },
-        ]);
-        if (insHoldErr) throw insHoldErr;
-      } else {
-        const { error: updHoldErr } = await supabase
-          .from("holdings")
-          .update({ amount: Number(holding.amount) + qty })
-          .eq("id", holding.id);
-        if (updHoldErr) throw updHoldErr;
+    // For sell orders, validate against holdings
+    if (action === "sell") {
+      const cryptoAmountNeeded = amountKes / price;
+      if (cryptoAmountNeeded > maxSellAmount) {
+        return;
       }
+    }
 
-      // Update wallet balance
-      const { error: updWalErr } = await supabase
-        .from("wallets")
-        .update({ balance_kes: currentBalance - amountKes })
-        .eq("id", wallet!.id);
-      if (updWalErr) throw updWalErr;
+    const result = await trade({
+      symbol: selectedCrypto,
+      side: action,
+      amountKes,
+      price
+    });
 
-      toast({ title: "Purchase Successful", description: `Bought ${qty.toFixed(6)} ${selectedCrypto} for KES ${amountKes}` });
+    if (result.success) {
       setKesAmount("");
       setSelectedCrypto("");
-    } catch (err: any) {
-      toast({ title: "Trade Failed", description: err.message || "Something went wrong.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
+      // Refresh holdings
+      if (userId) {
+        try {
+          const userHoldings = await getUserHoldings(userId);
+          const holdingsMap = userHoldings.reduce((acc, holding) => {
+            acc[holding.symbol] = Number(holding.amount);
+            return acc;
+          }, {} as Record<string, number>);
+          setHoldings(holdingsMap);
+        } catch (error) {
+          console.error('Failed to refresh holdings:', error);
+        }
+      }
     }
   };
 
@@ -193,8 +176,12 @@ export const CryptoTrading = () => {
               </div>
             )}
 
-            <Button onClick={() => handleTrade("buy")} disabled={loading || isLoading || !selectedCrypto || !kesAmount} className="w-full success-gradient hover:opacity-90 transition-smooth">
-              {isLoading ? (
+            <Button 
+              onClick={() => handleTrade("buy")} 
+              disabled={pricesLoading || tradeLoading || !selectedCrypto || !kesAmount} 
+              className="w-full success-gradient hover:opacity-90 transition-smooth"
+            >
+              {tradeLoading ? (
                 <div className="flex items-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   <span>Processing...</span>
@@ -209,10 +196,96 @@ export const CryptoTrading = () => {
           </TabsContent>
 
           <TabsContent value="sell" className="space-y-4 mt-4">
-            <div className="text-center p-8 text-muted-foreground">
-              <ArrowUpRight className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Sell feature will be available once you have crypto holdings</p>
-            </div>
+            {!canSell ? (
+              <div className="text-center p-8 text-muted-foreground">
+                <ArrowUpRight className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No crypto holdings available to sell</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Select Cryptocurrency to Sell</Label>
+                  <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
+                    <SelectTrigger className="bg-secondary/50 border-border">
+                      <SelectValue placeholder="Choose crypto to sell" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cryptoOptions
+                        .filter(crypto => holdings[crypto.symbol] > 0)
+                        .map((crypto) => (
+                          <SelectItem key={crypto.symbol} value={crypto.symbol}>
+                            <div className="flex items-center space-x-3">
+                              <span>{crypto.icon}</span>
+                              <div>
+                                <span className="font-medium">{crypto.symbol}</span>
+                                <span className="text-muted-foreground ml-2">{crypto.name}</span>
+                              </div>
+                              <span className="ml-auto text-sm">
+                                {holdings[crypto.symbol]?.toFixed(6)} available
+                              </span>
+                            </div>
+                          </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sell-amount">Amount (KES)</Label>
+                  <Input
+                    id="sell-amount"
+                    type="number"
+                    placeholder="Enter KES amount to sell"
+                    value={kesAmount}
+                    onChange={(e) => setKesAmount(e.target.value)}
+                    className="bg-secondary/50 border-border"
+                  />
+                  {selectedCrypto && maxSellAmount > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Maximum: {(maxSellAmount * (selectedCryptoData?.price || 0)).toLocaleString()} KES 
+                      ({maxSellAmount.toFixed(6)} {selectedCrypto})
+                    </p>
+                  )}
+                </div>
+
+                {selectedCryptoData && kesAmount && (
+                  <div className="p-3 bg-danger/10 border border-danger/20 rounded-lg">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">You will sell:</span>
+                      <span className="font-medium">{cryptoAmount} {selectedCrypto}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm mt-1">
+                      <span className="text-muted-foreground">Current price:</span>
+                      <span>KES {selectedCryptoData.price.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+
+                <Button 
+                  onClick={() => handleTrade("sell")} 
+                  disabled={
+                    pricesLoading || 
+                    tradeLoading || 
+                    !selectedCrypto || 
+                    !kesAmount ||
+                    (selectedCryptoData && kesAmount && parseFloat(kesAmount) / selectedCryptoData.price > maxSellAmount)
+                  }
+                  className="w-full danger-gradient hover:opacity-90 transition-smooth"
+                >
+                  {tradeLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Processing...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <TrendingDown className="h-4 w-4" />
+                      <span>Sell {selectedCrypto || "Crypto"}</span>
+                    </div>
+                  )}
+                </Button>
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>

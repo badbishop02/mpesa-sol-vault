@@ -1,5 +1,8 @@
 project_id = "ccgowkctshnacrrgaloj"
 
+[functions.execute-trade]
+verify_jwt = true
+
 [functions.mpesa-stk-push]
 verify_jwt = true
 
@@ -37,4 +40,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.admin-operations]
-verify_jwt = false
+verify_jwt = true
