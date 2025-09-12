@@ -3,6 +3,9 @@ project_id = "ccgowkctshnacrrgaloj"
 [functions.execute-trade]
 verify_jwt = true
 
+[functions.auth-rate-limiter]
+verify_jwt = false
+
 [functions.mpesa-stk-push]
 verify_jwt = true
 

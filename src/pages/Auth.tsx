@@ -86,22 +86,50 @@ const Auth = () => {
 
   const handleSignIn = async () => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) return toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
-    
-    // Generate wallet on first login if needed
-    if (data.user) {
-      try {
-        await supabase.functions.invoke('wallet-generator', {
-          body: { user_id: data.user.id }
+    try {
+      // Check rate limit before attempting
+      const identifier = email.toLowerCase();
+      const rateLimitCheck = await supabase.functions.invoke('auth-rate-limiter', {
+        body: { action: 'check_rate_limit', identifier }
+      });
+
+      if (rateLimitCheck.data && !rateLimitCheck.data.allowed) {
+        const lockoutTime = new Date(rateLimitCheck.data.lockoutUntil).toLocaleTimeString();
+        return toast({ 
+          title: "Account Locked", 
+          description: `Too many failed attempts. Try again after ${lockoutTime}`, 
+          variant: "destructive" 
         });
-      } catch (walletError) {
-        console.log('Wallet generation handled separately');
       }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        return toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      }
+
+      // Record successful auth to clear lockout
+      await supabase.functions.invoke('auth-rate-limiter', {
+        body: { action: 'record_success', identifier }
+      });
+      
+      // Generate wallet on first login if needed
+      if (data.user) {
+        try {
+          await supabase.functions.invoke('wallet-generator', {
+            body: { user_id: data.user.id }
+          });
+        } catch (walletError) {
+          console.log('Wallet generation handled separately');
+        }
+      }
+      
+      toast({ title: "Welcome back" });
+    } catch (err) {
+      toast({ title: "Sign in failed", description: "Please try again", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    
-    toast({ title: "Welcome back" });
   };
 
   const handleSignUp = async () => {

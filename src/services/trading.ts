@@ -8,7 +8,7 @@ export type TradeRequest = {
 };
 
 export async function executeTradeViaEdge(trade: TradeRequest) {
-  const { data, error } = await supabase.functions.invoke('secure-crypto-buy', {
+  const { data, error } = await supabase.functions.invoke('execute-trade', {
     body: trade
   });
 

@@ -22,7 +22,7 @@ export function normalizePhone(phoneRaw: string): string {
     return digits;
   }
   
-  throw new Error("Enter a valid Kenyan phone number (e.g., 0712345678)");
+  throw new Error("Enter a valid Kenyan phone number");
 }
 
 export function validateAmount(amount: number, min = 10, max = 150000): void {
@@ -30,7 +30,7 @@ export function validateAmount(amount: number, min = 10, max = 150000): void {
     throw new Error("Invalid amount");
   }
   if (amount < min) {
-    throw new Error(`Minimum deposit is KES ${min}`);
+    throw new Error(`Minimum deposit is KES ${min.toLocaleString()}`);
   }
   if (amount > max) {
     throw new Error(`Maximum deposit is KES ${max.toLocaleString()}`);
