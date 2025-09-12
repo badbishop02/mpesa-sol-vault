@@ -668,6 +668,30 @@ export type Database = {
         Args: { private_key: string; user_salt: string }
         Returns: string
       }
+      execute_crypto_buy: {
+        Args: {
+          p_amount_kes: number
+          p_crypto_amount: number
+          p_fee_amount: number
+          p_price: number
+          p_symbol: string
+          p_user_id: string
+          p_wallet_id: string
+        }
+        Returns: undefined
+      }
+      execute_crypto_sell: {
+        Args: {
+          p_amount_kes: number
+          p_crypto_amount: number
+          p_fee_amount: number
+          p_price: number
+          p_symbol: string
+          p_user_id: string
+          p_wallet_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
