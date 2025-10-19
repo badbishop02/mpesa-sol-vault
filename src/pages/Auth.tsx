@@ -70,7 +70,16 @@ const Auth = () => {
       options: { redirectTo: `${window.location.origin}/` },
     });
     setGoogleLoading(false);
-    if (error) toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
+    if (error) {
+      if (error.message.includes('captcha')) {
+        return toast({ 
+          title: "CAPTCHA Required", 
+          description: "Please disable CAPTCHA in Supabase Auth settings or contact support.", 
+          variant: "destructive" 
+        });
+      }
+      toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
+    }
   };
 
   const handleReset = async () => {
@@ -105,6 +114,14 @@ const Auth = () => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
+        // Handle CAPTCHA error specifically
+        if (error.message.includes('captcha')) {
+          return toast({ 
+            title: "CAPTCHA Required", 
+            description: "Please disable CAPTCHA in Supabase Auth settings or contact support.", 
+            variant: "destructive" 
+          });
+        }
         return toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
       }
 
@@ -145,13 +162,26 @@ const Auth = () => {
         data: { full_name: fullName, username, phone, birthday, country },
       },
     });
+    
+    if (error) {
+      setLoading(false);
+      // Handle CAPTCHA error specifically
+      if (error.message.includes('captcha')) {
+        return toast({ 
+          title: "CAPTCHA Required", 
+          description: "Please disable CAPTCHA in Supabase Auth settings (Bot and Abuse Protection) or contact support.", 
+          variant: "destructive" 
+        });
+      }
+      return toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+    }
+    
     // Try to store profile if session already exists (email confirmations disabled)
     const userId = data?.user?.id;
-    if (userId && !error) {
+    if (userId) {
       await supabase.from("profiles").upsert({ id: userId, display_name: fullName, full_name: fullName, username, phone, country }, { onConflict: "id" });
     }
     setLoading(false);
-    if (error) return toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
     toast({ title: "Check your email", description: "Confirm to finish sign up." });
   };
 
