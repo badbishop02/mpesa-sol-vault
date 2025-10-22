@@ -102,7 +102,7 @@ serve(async (req) => {
     );
   } catch (err: any) {
     console.error("mpesa-c2b-confirmation error", err);
-    return new Response(JSON.stringify({ error: err.message || "Unexpected error" }), {
+    return new Response(JSON.stringify({ error: "Unable to process request" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

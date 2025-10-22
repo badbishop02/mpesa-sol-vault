@@ -119,7 +119,7 @@ serve(async (req) => {
     });
   } catch (err: any) {
     console.error("mpesa-crypto-callback error:", err);
-    return new Response(JSON.stringify({ error: err.message || "Unexpected error" }), {
+    return new Response(JSON.stringify({ error: "Unable to process request" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });

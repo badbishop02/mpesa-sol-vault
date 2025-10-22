@@ -99,7 +99,8 @@ serve(async (req) => {
     const { value: simulationResult } = await connection.simulateTransaction(transaction);
     
     if (simulationResult.err) {
-      throw new Error(`Transaction simulation failed: ${JSON.stringify(simulationResult.err)}`);
+      console.error('Simulation failed:', simulationResult.err);
+      throw new Error('Transaction validation failed');
     }
 
     // Send transaction
@@ -169,7 +170,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: 'Transfer failed' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

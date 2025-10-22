@@ -115,9 +115,10 @@ serve(async (req) => {
       .single();
 
     if (walletError) {
+      console.error('Wallet fetch error:', walletError);
       return new Response(
-        JSON.stringify({ error: 'Wallet not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unable to process request' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -142,8 +143,9 @@ serve(async (req) => {
       });
 
       if (updateError) {
+        console.error('Transaction error:', updateError);
         return new Response(
-          JSON.stringify({ error: 'Transaction failed: ' + updateError.message }),
+          JSON.stringify({ error: 'Transaction failed' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -175,8 +177,9 @@ serve(async (req) => {
       });
 
       if (sellError) {
+        console.error('Sell transaction error:', sellError);
         return new Response(
-          JSON.stringify({ error: 'Sell transaction failed: ' + sellError.message }),
+          JSON.stringify({ error: 'Transaction failed' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
