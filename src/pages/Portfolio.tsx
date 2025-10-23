@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Clock, RefreshCw } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 
 interface PortfolioData {
@@ -110,43 +109,35 @@ const Portfolio = () => {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-muted-foreground">Loading portfolio...</p>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Loading portfolio...</p>
         </div>
-      </>
+      </div>
     );
   }
 
   if (!portfolio) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-background">
-          <main className="container mx-auto p-6">
-            <Card className="crypto-card border-0">
-              <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground">No portfolio data available.</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Start trading to see your portfolio here.
-                </p>
-              </CardContent>
-            </Card>
-          </main>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-4 md:p-8">
+          <Card className="crypto-card border-0">
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">No portfolio data available.</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Start trading to see your portfolio here.
+              </p>
+            </CardContent>
+          </Card>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-4 md:p-8">
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div>
@@ -357,9 +348,8 @@ const Portfolio = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </div>
     </div>
-    </>
   );
 };
 

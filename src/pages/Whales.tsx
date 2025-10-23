@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TrendingUp, TrendingDown, Users, Clock, RefreshCw, Filter } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
 
 interface Whale {
   id: string;
@@ -162,24 +161,19 @@ const Whales = () => {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-background">
-          <main className="container mx-auto p-6">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-lg">Loading whales...</div>
-            </div>
-          </main>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-4 md:p-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading whales...</div>
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-4 md:p-8">
           <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <div>
@@ -403,9 +397,8 @@ const Whales = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </div>
     </div>
-    </>
   );
 };
 

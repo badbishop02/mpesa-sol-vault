@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trash2, Plus, MessageCircle, Settings, Zap, HelpCircle } from "lucide-react";
-import { Navbar } from "@/components/Navbar";
 
 interface TelegramSource {
   id: string;
@@ -184,24 +183,19 @@ const TelegramBot = () => {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-background">
-          <main className="container mx-auto p-6">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-lg">Loading Telegram settings...</div>
-            </div>
-          </main>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-4 md:p-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-lg">Loading Telegram settings...</div>
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-4 md:p-8">
           <div className="flex flex-col gap-6">
             <div>
               <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
@@ -353,9 +347,8 @@ const TelegramBot = () => {
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
-    </>
   );
 };
 

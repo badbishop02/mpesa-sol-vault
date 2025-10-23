@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -68,10 +67,8 @@ const Support = () => {
   ];
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-4 md:p-8">
           <div className="flex flex-col gap-6">
             <div>
               <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
@@ -256,9 +253,9 @@ const Support = () => {
               </CardContent>
             </Card>
           </div>
-        </main>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
