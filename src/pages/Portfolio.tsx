@@ -4,7 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, DollarSign, Target, Clock, RefreshCw } from "lucide-react";
+import { Navbar } from "@/components/Navbar";
+import { Button } from "@/components/ui/button";
 
 interface PortfolioData {
   total_value: number;
@@ -26,6 +28,7 @@ const Portfolio = () => {
   const { toast } = useToast();
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     document.title = "Portfolio | WalletOS";
@@ -55,12 +58,20 @@ const Portfolio = () => {
     };
   }, []);
 
-  const fetchPortfolio = async () => {
+  const fetchPortfolio = async (showRefreshToast = false) => {
     try {
+      setRefreshing(true);
       const { data, error } = await supabase.functions.invoke('portfolio-tracker');
 
       if (error) throw error;
       setPortfolio(data.portfolio);
+      
+      if (showRefreshToast) {
+        toast({
+          title: "Refreshed",
+          description: "Portfolio updated successfully"
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error loading portfolio",
@@ -69,6 +80,7 @@ const Portfolio = () => {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -98,44 +110,63 @@ const Portfolio = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Loading portfolio...</p>
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Loading portfolio...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!portfolio) {
     return (
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
-          <Card className="crypto-card border-0">
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">No portfolio data available.</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Start trading to see your portfolio here.
-              </p>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-background">
+          <main className="container mx-auto p-6">
+            <Card className="crypto-card border-0">
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground">No portfolio data available.</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Start trading to see your portfolio here.
+                </p>
+              </CardContent>
+            </Card>
+          </main>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto p-6">
-        <div className="flex flex-col gap-6">
-          <div>
-            <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
-              Portfolio
-            </h1>
-            <p className="text-muted-foreground">
-              Track your investments and trading performance
-            </p>
-          </div>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-background">
+        <main className="container mx-auto p-6">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
+                  Portfolio
+                </h1>
+                <p className="text-muted-foreground">
+                  Track your investments and trading performance
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => fetchPortfolio(true)}
+                disabled={refreshing}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
 
           {/* Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -328,6 +359,7 @@ const Portfolio = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 

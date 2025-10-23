@@ -7,7 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, TrendingDown, Users, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Clock, RefreshCw, Filter } from "lucide-react";
+import { Navbar } from "@/components/Navbar";
 
 interface Whale {
   id: string;
@@ -40,6 +41,8 @@ const Whales = () => {
   const [sizingType, setSizingType] = useState("percent");
   const [sizingValue, setSizingValue] = useState("1.0");
   const [maxSlippage, setMaxSlippage] = useState("0.05");
+  const [minScore, setMinScore] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     document.title = "Whales | WalletOS";
@@ -47,14 +50,22 @@ const Whales = () => {
     fetchFollows();
   }, []);
 
-  const fetchWhales = async () => {
+  const fetchWhales = async (showRefreshToast = false) => {
     try {
+      setRefreshing(true);
       const { data, error } = await supabase.functions.invoke('whale-tracker', {
         body: { mock: true } // Enable mock mode for development
       });
 
       if (error) throw error;
       setWhales(data.whales);
+      
+      if (showRefreshToast) {
+        toast({
+          title: "Refreshed",
+          description: "Whale data updated successfully"
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error loading whales",
@@ -63,6 +74,7 @@ const Whales = () => {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -143,30 +155,51 @@ const Whales = () => {
     }).format(pnl);
   };
 
+  const filteredWhales = whales.filter(whale => {
+    if (minScore && whale.score < parseFloat(minScore)) return false;
+    return true;
+  });
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg">Loading whales...</div>
-          </div>
-        </main>
-      </div>
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-background">
+          <main className="container mx-auto p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-lg">Loading whales...</div>
+            </div>
+          </main>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto p-6">
-        <div className="flex flex-col gap-6">
-          <div>
-            <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
-              Whale Tracker
-            </h1>
-            <p className="text-muted-foreground">
-              Follow top performing wallets and copy their trades automatically
-            </p>
-          </div>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-background">
+        <main className="container mx-auto p-6">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
+                  Whale Tracker
+                </h1>
+                <p className="text-muted-foreground">
+                  Follow top performing wallets and copy their trades automatically
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => fetchWhales(true)}
+                disabled={refreshing}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
 
           <Tabs defaultValue="discover" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -175,6 +208,33 @@ const Whales = () => {
             </TabsList>
 
             <TabsContent value="discover" className="space-y-6">
+              {/* Filters */}
+              <Card className="crypto-card border-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="w-5 h-5" />
+                    Filters
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4 items-end">
+                    <div className="flex-1">
+                      <Label>Minimum Score</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={minScore}
+                        onChange={(e) => setMinScore(e.target.value)}
+                        placeholder="Filter by min score (e.g., 7.5)"
+                      />
+                    </div>
+                    <Button variant="outline" onClick={() => setMinScore("")}>
+                      Clear
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Copy Trade Settings */}
               <Card className="crypto-card border-0">
                 <CardHeader>
@@ -218,7 +278,10 @@ const Whales = () => {
 
               {/* Whales List */}
               <div className="grid gap-4">
-                {whales.map((whale) => (
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredWhales.length} of {whales.length} whales
+                </div>
+                {filteredWhales.map((whale) => (
                   <Card key={whale.id} className="crypto-card border-0">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
@@ -342,6 +405,7 @@ const Whales = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 

@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Trash2, Plus, MessageCircle, Settings, Zap } from "lucide-react";
+import { Trash2, Plus, MessageCircle, Settings, Zap, HelpCircle } from "lucide-react";
+import { Navbar } from "@/components/Navbar";
 
 interface TelegramSource {
   id: string;
@@ -56,6 +57,16 @@ const TelegramBot = () => {
       toast({
         title: "Invalid link",
         description: "Please enter a valid Telegram link",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate Telegram URL format
+    if (!newLink.includes('t.me/')) {
+      toast({
+        title: "Invalid Telegram link",
+        description: "Link must be in format: https://t.me/channel_name",
         variant: "destructive"
       });
       return;
@@ -173,40 +184,58 @@ const TelegramBot = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <main className="container mx-auto p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg">Loading Telegram settings...</div>
-          </div>
-        </main>
-      </div>
+      <>
+        <Navbar />
+        <div className="min-h-screen bg-background">
+          <main className="container mx-auto p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-lg">Loading Telegram settings...</div>
+            </div>
+          </main>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto p-6">
-        <div className="flex flex-col gap-6">
-          <div>
-            <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
-              Telegram Bot
-            </h1>
-            <p className="text-muted-foreground">
-              Connect Telegram channels for automated trade signal execution
-            </p>
-          </div>
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-background">
+        <main className="container mx-auto p-6">
+          <div className="flex flex-col gap-6">
+            <div>
+              <h1 className="text-3xl font-bold crypto-gradient bg-clip-text text-transparent">
+                Telegram Bot
+              </h1>
+              <p className="text-muted-foreground">
+                Connect Telegram channels for automated trade signal execution
+              </p>
+            </div>
 
-          {/* Info Alert */}
-          <Alert>
-            <MessageCircle className="h-4 w-4" />
-            <AlertDescription>
-              Add Telegram channels or groups that share trading signals. Our bot will parse messages for trade signals 
-              and automatically execute them if auto-execute is enabled. Supported patterns: "BUY/SELL [TOKEN]", "🟢/🔴 [TOKEN]"
-            </AlertDescription>
-          </Alert>
+            {/* Info Alerts */}
+            <Alert>
+              <MessageCircle className="h-4 w-4" />
+              <AlertDescription>
+                Add Telegram channels or groups that share trading signals. Our bot will parse messages for trade signals 
+                and automatically execute them if auto-execute is enabled.
+              </AlertDescription>
+            </Alert>
 
-          {/* Add New Source */}
-          <Card className="crypto-card border-0">
+            <Alert>
+              <HelpCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Supported Signal Patterns:</strong>
+                <ul className="list-disc list-inside mt-2 text-sm space-y-1">
+                  <li>"BUY SOL" or "SELL SOL" - Standard text format</li>
+                  <li>"🟢 SOL" or "🔴 SOL" - Emoji indicators (green = buy, red = sell)</li>
+                  <li>"LONG BTC" or "SHORT BTC" - Long/short format</li>
+                </ul>
+                <p className="mt-2 text-sm">The bot automatically detects token symbols from Solana network.</p>
+              </AlertDescription>
+            </Alert>
+
+            {/* Add New Source */}
+            <Card className="crypto-card border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5" />
@@ -251,8 +280,8 @@ const TelegramBot = () => {
             </CardContent>
           </Card>
 
-          {/* Existing Sources */}
-          <div className="space-y-4">
+            {/* Existing Sources */}
+            <div className="space-y-4">
             {sources.length === 0 ? (
               <Card className="crypto-card border-0">
                 <CardContent className="p-6 text-center">
@@ -326,6 +355,7 @@ const TelegramBot = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 
