@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, AlertTriangle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Index = () => {
   const [user, setUser] = useState<any>(null);
@@ -89,12 +90,19 @@ const Index = () => {
 
   if (hasWallet === null) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
+      <main className="container mx-auto p-6 space-y-6">
+        <Skeleton className="h-20 w-full" />
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-96 w-full" />
+          </div>
         </div>
-      </div>
+      </main>
     );
   }
 

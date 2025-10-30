@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "./Navbar";
+import { Skeleton } from "./ui/skeleton";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -30,10 +31,19 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border">
+          <div className="container mx-auto p-4">
+            <Skeleton className="h-12 w-48" />
+          </div>
+        </div>
+        <div className="container mx-auto p-6 space-y-6">
+          <Skeleton className="h-40 w-full" />
+          <div className="grid md:grid-cols-3 gap-4">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
         </div>
       </div>
     );
